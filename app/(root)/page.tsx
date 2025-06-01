@@ -4,10 +4,20 @@ import Image from 'next/image'
 import React from 'react'
 import { dummyInterviews } from '@/public/constants'
 import InterviewCard from '@/components/InterviewCard'
+import { getCurrentUser, getInterviewsByUserId, getLatestInterviews} from '@/lib/actions/auth.action'
 
 
 
-const Page = () => {
+const Page = async () => {
+  const user=await getCurrentUser();
+  const [userInterviews, latestInterviews] = await Promise.all([
+    getInterviewsByUserId(user?.id!),
+    getLatestInterviews({ userId: user?.id! }),
+  ]);
+
+  const hasPastInterviews=userInterviews?.length!>0;
+  const hasUpcomingInterviews = latestInterviews?.length! > 0;
+
   return (
     <>
       <section className='card-cta'> 
@@ -30,24 +40,46 @@ const Page = () => {
         <section className="flex flex-col gap-6 mt-8">
           <h2>Your Interviews</h2>
             <div className='interviews-section'>
-              {dummyInterviews.map((interview) => (
-                <InterviewCard {...interview} key={interview.id}/>
-              ))}
+              {hasPastInterviews ? (
+                userInterviews?.map((interview) => (
+                  <InterviewCard
+                    key={interview.id}
+                    userId={user?.id}                      
+                    interviewId={interview.id}
+                    role={interview.role}
+                    type={interview.type}
+                    techstack={interview.techstack}
+                    createdAt={interview.createdAt}
+                  />
+                ))
+                ) : (
+                  <p>You haven't taken any interviews</p>
+                )}
+            </div>
+          </section>
+        </section>
 
-              {/*<p>You haven&apost taken any interviews</p>*/}
+        <section className="flex flex-col gap-6 mt-8">
+          <h2>Take an Interview</h2>
+          <div className="interviews-section">
+            {hasUpcomingInterviews ? (
+                latestInterviews?.map((interview) => (
+                  <InterviewCard
+                    key={interview.id}
+                    userId={user?.id}                      
+                    interviewId={interview.id}
+                    role={interview.role}
+                    type={interview.type}
+                    techstack={interview.techstack}
+                    createdAt={interview.createdAt}
+                  />
+                ))
+                ) : (
+                  <p>There are no new interviews available</p>
+                )}
           </div>
         </section>
-      </section>
-
-      <section className="flex flex-col gap-6 mt-8">
-        <h2>Take Interviews</h2>
-        <div className="interviews-section">
-          {dummyInterviews.map((interview) => (
-            <InterviewCard {...interview} key={interview.id}/>
-              ))}
-        </div>
-      </section>
-    </>
+      </>
   )
 }
 
